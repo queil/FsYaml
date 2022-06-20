@@ -56,8 +56,4 @@ FieldD:
       let actual = Yaml.load<ComplexType> yaml
       "Objects should be equal" |> Expect.equal actual value
     }
-    
-    test "Should be able to read resources for exception - move it" {
-      raise (CustomTypeDefinition.mustBeScalar typeof<_ list> (Null None))
-    }
   ]

@@ -26,10 +26,10 @@ module RepresentationTest =
       do! actual |> should equal (Scalar (Plain input, None))
     }
     parameterize {
-      case ("abc")
-      case ("1")
-      case ("3:4")
-      case ("3-4")
+      case "abc"
+      case "1"
+      case "3:4"
+      case "3-4"
       run body
     }
 
@@ -229,19 +229,19 @@ module LoadTest =
   let 空のmapに変換できる = test {
     let yaml = "{}"
     let actual = Yaml.load<Map<string, int>> yaml
-    do! actual |> should equal (Map.empty<string, int>)
+    do! actual |> should equal Map.empty<string, int>
   }
 
   let arrayに変換できる = test {
     let yaml = "[ 1, 2, 3 ]"
     let actual = Yaml.load<int[]> yaml
-    do! actual |> should equal ([| 1; 2; 3 |])
+    do! actual |> should equal [| 1; 2; 3 |]
   }
 
   let 空のarrayに変換できる = test {
     let yaml = "[]"
     let actual = Yaml.load<int[]> yaml
-    do! actual |> should equal (Array.empty<int>)
+    do! actual |> should equal Array.empty<int>
   }
 
   let seqに変換できる = test {
@@ -253,7 +253,7 @@ module LoadTest =
   let 空のseqに変換できる = test {
     let yaml = "[]"
     let actual = Yaml.load<seq<int>> yaml
-    do! actual |> should equalSeq (Seq.empty<int>)
+    do! actual |> should equalSeq Seq.empty<int>
   }
 
 module LoadUnionTest =
@@ -378,9 +378,9 @@ module LoadUnionTest =
       do! actual |> should equal (None: int option)
     }
     parameterize {
-      case ("~")
-      case ("null")
-      case ("None")
+      case "~"
+      case "null"
+      case "None"
       run body
     }
 
@@ -390,8 +390,8 @@ module LoadUnionTest =
       do! actual |> should equal (Some 1)
     }
     parameterize {
-      case ("Some: 1")
-      case ("1")
+      case "Some: 1"
+      case "1"
       run body
     }
 

@@ -94,5 +94,6 @@ let toYamlString (yaml: YamlNode) =
   stream.Save(writer, false)
   let str = writer.ToString()
   str.Substring(0, str.Length - 5) // remove "...\r\n"
+  // TODO: ^^ this should not use stream api - then we wouldn't need to remove '...'
 
 let present = intermediateToYamlDotNet >> toYamlString

@@ -2,27 +2,27 @@
 
 open System
 
-/// YamlのRepresentation層の型を提供します。
+/// Provides the type of Representation layer in Yaml.
 module RepresentationTypes =
-  /// Scalar Nodeの値
+  /// Scalar Node value
   type Scalar =
-    /// Plain形式のScalar
+    /// Plain format Scalar
     | Plain of string
-    /// Plain形式以外のScalar
+    /// Scalar other than Plain format
     | NonPlain of string
 
-  /// Scalarを操作するモジュールです。
+  /// It is a module that operates Scalar.
   [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
   module Scalar =
-    /// Scalarの値を取得します。
+    /// Gets the value of Scalar.
     let value = function
       | Plain x -> x
       | NonPlain x -> x
 
-  /// Yaml文字列中の位置
+  /// Position in Yaml string
   type Position = { Line: int; Column: int; }
 
-  /// Yamlを表現します。
+  /// Represents Yaml.
   type YamlObject =
     /// Scalar node
     | Scalar of Scalar * Position option
@@ -30,67 +30,67 @@ module RepresentationTypes =
     | Sequence of YamlObject list * Position option
     /// Mapping node
     | Mapping of Map<YamlObject, YamlObject> * Position option
-    /// Scalarを特殊化したNullの値
+    /// Null value that specializes in Scalar
     | Null of Position option
 
-  /// YamlObjectを操作するモジュールです。
+  /// A module that operates YamlObject.
   [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
   module YamlObject =
     open Microsoft.FSharp.Reflection
 
-    /// 対象のオブジェクトのYaml文字列中の位置を取得します。
+    /// Gets the position of the target object in the Yaml string.
     let position = function
       | Scalar (_, p) -> p
       | Sequence (_, p) -> p
       | Mapping (_, p) -> p
       | Null p -> p
 
-    /// Nodeの名前を取得します。
+    /// Get the name of the Node.
     let nodeTypeName (x: YamlObject) = let caseInfo, _ = FSharpValue.GetUnionFields(x, typeof<YamlObject>) in caseInfo.Name
 
-  /// Mappingを操作するモジュールです。
+  /// It is a module that operates Mapping.
   [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
   module Mapping =
     let private pickF name = (fun k v ->
       match k with
       | Scalar (k, _) -> if Scalar.value k = name then Some v else None
       | _ -> None)
-    /// Mapping内の要素を検索します。要素が存在しない場合はNoneを返します。
+    /// Search for elements in Mapping. Returns None if the element does not exist.
     let tryFind key (mapping: Map<YamlObject, YamlObject>) = Map.tryPick (pickF key) mapping
     /// <summary>
-    /// Mapping内の要素を検索します。
+    /// Search for elements in Mapping.
     /// </summary>
-    /// <exception cref="System.Collections.Generic.KeyNotFoundException">キーが存在しない場合</exception>
+    /// <exception cref="System.Collections.Generic.KeyNotFoundException">If the key does not exist</exception>
     let find key (mapping: Map<YamlObject, YamlObject>) = Map.pick (pickF key) mapping
 
-/// YamlのNative層の型を提供します。
+/// Provides a type of Native layer for Yaml.
 module NativeTypes =
   open RepresentationTypes
 
   /// <summary>
-  /// Yamlから<c>Type</c>が表す型のオブジェクトに変換します。
+  /// Convert from Yaml to an object of the type represented by <c>Type</c>.
   /// </summary>
   type Constructor = Type -> YamlObject -> obj
   /// <summary>
-  /// 再帰的にYamlからオブジェクトに変換します。ジェネリック型の要素や、メンバーの変換に使用します。
+  /// Recursively convert from Yaml to an object. Used for generic type element and member conversion.
   /// </summary>
   type RecursiveConstructor = Constructor
 
   /// <summary>
-  /// <c>Type</c>が表す型のオブジェクトをYamlに変換します。
+  /// Converts an object of the type represented by <c>Type</c> to Yaml.
   /// </summary>
   type Representer = Type -> obj -> YamlObject
   /// <summary>
-  /// 再帰的にオブジェクトからYamlに変換します。ジェネリック型の要素や、メンバーの変換に使用します。
+  /// Recursively convert objects to Yaml. Used for generic type element and member conversion.
   /// </summary>
   type RecursiveRepresenter = Representer
 
-  /// Yamlとオブジェクト間の変換に関する情報です。
+  /// Information about conversions between Yaml and objects.
   type TypeDefinition = {
-    /// 渡された型が変換可能か返します。
+    /// Returns whether the passed type is convertible.
     Accept: Type -> bool
-    /// Yamlからオブジェクトに変換します。
+    /// Convert from Yaml to an object.
     Construct: RecursiveConstructor -> Constructor
-    /// オブジェクトからYamlに変換します。
+    /// Convert from an object to Yaml.
     Represent: RecursiveRepresenter -> Representer
   }

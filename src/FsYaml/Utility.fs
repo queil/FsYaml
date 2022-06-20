@@ -73,7 +73,7 @@ module Type =
     |> String.concat " * "
   and internal printGeneric (t: Type) =
     match List.tryFind ((=) (t.GetGenericTypeDefinition())) specialGenericType with
-    | Some (_) ->
+    | Some _ ->
       let elem = t.GetGenericArguments().[0]
       let elemName = print elem
       let name = typeName t

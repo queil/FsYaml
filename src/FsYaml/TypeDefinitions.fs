@@ -123,13 +123,13 @@ module internal Detail =
       Mapping (values, None)
 
   let recordDef = {
-    Accept = (fun t -> FSharpType.IsRecord(t))
+    Accept = FSharpType.IsRecord
     Construct = RecordConstructor.construct
-    Represent = RecordRepresenter.represent ((* omitDefaultFields: *) false)
+    Represent = RecordRepresenter.represent false
   }
 
   let tupleDef = {
-    Accept = (fun t -> FSharpType.IsTuple(t))
+    Accept = FSharpType.IsTuple
     Construct = fun construct' t yaml ->
       match yaml with
       | Sequence (sequence, _) ->
@@ -343,7 +343,7 @@ module internal Detail =
         | _ -> manyFields represent union values 
 
   let unionDef = {
-    Accept = fun t -> FSharpType.IsUnion(t)
+    Accept = FSharpType.IsUnion
     Construct = fun construct' t yaml ->
       match FSharpType.GetUnionCases(t) |> Seq.tryPick (UnionConstructor.tryConstruct construct' yaml) with
       | Some x -> x
@@ -375,9 +375,9 @@ module internal Detail =
 open Detail
 
 /// <summary>
-/// レコードの型定義で、dump においてデフォルト値が設定されているフィールドを出力しないバージョンです。
+/// This is the version that does not output the field for which the default value is set in dump in the record type definition.
 /// </summary>
 let recordDefOmittingDefaultFields =
-  { recordDef with Represent = RecordRepresenter.represent ((* omitDefaultFields: *) true) }
+  { recordDef with Represent = RecordRepresenter.represent true }
 
 let internal defaultDefinitions = [ intDef; int64Def; floatDef; stringDef; boolDef; decimalDef; datetimeDef; timespanDef; recordDef; tupleDef; listDef; setDef; mapDef; arrayDef; seqDef; optionDef; unionDef ]
