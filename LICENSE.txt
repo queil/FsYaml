@@ -37,7 +37,7 @@ B. The author is not responsible for any kind of damages or loss
   "AS IS". No warranty of any kind is expressed or implied.
   You use AT YOUR OWN RISK.
 
-C. Copyrighted to bleis-tift
+C. Copyrighted to queil
 
 D. Above three clauses are applied both to source and binary
   form of this software.

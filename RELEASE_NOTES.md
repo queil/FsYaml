@@ -1,3 +1,7 @@
+### 3.0.0 - 2022-06-20
+
+Upgraded to .NET 6 and modernized.
+
 ### 2.2.0 - 2017-06-10
 * 省略可能なフィールドは出力しない TypeDefinitions.recordDefOmittingDefaultFields を追加 - https://github.com/bleis-tift/FsYaml/pull/32
 * 型を System.Type で指定するAPIを追加 - https://github.com/bleis-tift/FsYaml/pull/35
