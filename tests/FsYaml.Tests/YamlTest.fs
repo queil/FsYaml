@@ -2,6 +2,7 @@ module Tests
 
 open Expecto
 open FsYaml
+open FsYaml.RepresentationTypes
 
 type ComplexType = {
   FieldA: int list
@@ -54,5 +55,9 @@ FieldD:
       let yaml = Yaml.dump value
       let actual = Yaml.load<ComplexType> yaml
       "Objects should be equal" |> Expect.equal actual value
+    }
+    
+    test "Should be able to read resources for exception - move it" {
+      raise (CustomTypeDefinition.mustBeScalar typeof<_ list> (Null None))
     }
   ]

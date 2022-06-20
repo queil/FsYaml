@@ -1,8 +1,8 @@
 ﻿/// <summary>
-/// オブジェクトとYamlの相互変換を提供します。
+/// Provides mutual conversion between objects and Yaml.
 /// </summary>
 /// <remarks>
-/// 変換は以下の型に対応しています。これら以外の型を変換するには、<see cref="FsYaml.NativeTypes.TypeDefinition" />を実装し、<c>loadWith</c>、<c>dumpWith</c>に渡します。<br />
+/// The conversion supports the following types: To convert other types <see cref="FsYaml.NativeTypes.TypeDefinition" /> Implemented <c>loadWith</c>, <c>dumpWith</c>Pass to.<br />
 /// <list type="bullet">
 ///   <item><description>int</description></item>
 ///   <item><description>int64</description></item>
@@ -12,14 +12,14 @@
 ///   <item><description>decimal</description></item>
 ///   <item><description>System.DateTime</description></item>
 ///   <item><description>System.TimeSpan</description></item>
-///   <item><description>レコード型</description></item>
-///   <item><description>タプル</description></item>
+///   <item><description>Record type</description></item>
+///   <item><description>Tuple</description></item>
 ///   <item><description>list&lt;'T&gt;</description></item>
 ///   <item><description>Map&lt;'Key, 'Value&gt;</description></item>
-///   <item><description>配列</description></item>
+///   <item><description>set</description></item>
 ///   <item><description>seq&lt;'T&gt;</description></item>
 ///   <item><description>Option&lt;'T&gt;</description></item>
-///   <item><description>判別共用体</description></item>
+///   <item><description>Discriminated union</description></item>
 /// </list>
 /// </remarks>
 module FsYaml.Yaml
@@ -104,10 +104,10 @@ let tryLoadWithUntyped typ customDefinitions yamlStr =
     _ -> None
 
 /// <summary>
-/// オブジェクトをYaml文字列へダンプします。
+/// Dump the object to a Yaml string.
 /// </summary>
-/// <param name="obj">ダンプするオブジェクト</param>
-/// <exception cref="FsYaml.FsYamlException">ダンプに失敗した場合</exception>
+/// <param name="obj">Object to dump</param>
+/// <exception cref="FsYaml.FsYamlException">If the dump fails</exception>
 let dump<'a> obj = Native.represent<'a> TypeDefinitions.defaultDefinitions obj |> Representation.present
 
 
