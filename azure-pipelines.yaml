@@ -7,7 +7,7 @@ trigger:
       - '*'
 
 variables:
-  pkgver: ${{ variables['Build.SourceBranchName'] }}
+  pkgver: ${{ replace(variables['Build.SourceBranchName'], 'v', '') }}
   BuildConfiguration: Release
 
 pool:
