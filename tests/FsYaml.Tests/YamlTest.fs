@@ -2,7 +2,6 @@ module Tests
 
 open Expecto
 open FsYaml
-open FsYaml.RepresentationTypes
 
 type ComplexType = {
   FieldA: int list
