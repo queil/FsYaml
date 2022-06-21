@@ -7,6 +7,7 @@ open System.IO
 open FsYaml.Utility
 open FsYaml.RepresentationTypes
 open System.Collections.Generic
+open YamlDotNet.Serialization
 
 let getPosition (mark: Mark) = Some { Line = mark.Line; Column = mark.Column }
 
@@ -88,12 +89,11 @@ let rec intermediateToYamlDotNet (yaml: YamlObject) =
     node.Style <- ScalarStyle.Plain
     node :> YamlNode
 
+let private serializer = SerializerBuilder().Build();
 let toYamlString (yaml: YamlNode) =
-  let stream = YamlStream(YamlDocument(yaml))
-  let writer = new StringWriter()
-  stream.Save(writer, false)
-  let str = writer.ToString()
-  str.Substring(0, str.Length - 5) // remove "...\r\n"
-  // TODO: ^^ this should not use stream api - then we wouldn't need to remove '...'
+  use sw = new StringWriter()
+  serializer.Serialize(sw, yaml)
+  sw.ToString()
+  
 
 let present = intermediateToYamlDotNet >> toYamlString
