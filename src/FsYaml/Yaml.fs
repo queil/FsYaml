@@ -1,8 +1,8 @@
 ﻿/// <summary>
-/// オブジェクトとYamlの相互変換を提供します。
+/// Provides mutual conversion between objects and Yaml.
 /// </summary>
 /// <remarks>
-/// 変換は以下の型に対応しています。これら以外の型を変換するには、<see cref="FsYaml.NativeTypes.TypeDefinition" />を実装し、<c>loadWith</c>、<c>dumpWith</c>に渡します。<br />
+/// The conversion supports the following types: To convert other types <see cref="FsYaml.NativeTypes.TypeDefinition" /> Implemented <c>loadWith</c>, <c>dumpWith</c>Pass to.<br />
 /// <list type="bullet">
 ///   <item><description>int</description></item>
 ///   <item><description>int64</description></item>
@@ -12,38 +12,38 @@
 ///   <item><description>decimal</description></item>
 ///   <item><description>System.DateTime</description></item>
 ///   <item><description>System.TimeSpan</description></item>
-///   <item><description>レコード型</description></item>
-///   <item><description>タプル</description></item>
+///   <item><description>Record type</description></item>
+///   <item><description>Tuple</description></item>
 ///   <item><description>list&lt;'T&gt;</description></item>
 ///   <item><description>Map&lt;'Key, 'Value&gt;</description></item>
-///   <item><description>配列</description></item>
+///   <item><description>set</description></item>
 ///   <item><description>seq&lt;'T&gt;</description></item>
 ///   <item><description>Option&lt;'T&gt;</description></item>
-///   <item><description>判別共用体</description></item>
+///   <item><description>Discriminated union</description></item>
 /// </list>
 /// </remarks>
 module FsYaml.Yaml
 
 /// <summary>
-/// Yaml文字列を<c>'a</c>のオブジェクトとしてロードします。
+/// Load the Yaml string as an object of <c>&#39;a</ c>.
 /// </summary>
-/// <param name="yamlStr">ロードするYaml文字列</param>
-/// <exception cref="FsYaml.FsYamlException">ロードに失敗した場合</exception>
+/// <param name="yamlStr">Yaml string to load</param>
+/// <exception cref="FsYaml.FsYamlException">If loading fails</exception>
 let load<'a> yamlStr = Representation.parse yamlStr |> Native.construct<'a> TypeDefinitions.defaultDefinitions
 
 /// <summary>
-/// 指定した型情報とデフォルトの型情報をもとに、Yaml文字列を<c>'a</c>のオブジェクトとしてロードします。
-/// 指定された型情報は、デフォルトの型情報より優先されます。そして、デフォルトの型情報と同じ型を指定すると、ロードの挙動を上書きできます。
+/// Loads a Yaml string as an <c>&#39;a</ c> object based on the specified type information and the default type information.
+/// The specified type information takes precedence over the default type information. You can then override the load behavior by specifying the same type as the default type information.
 /// </summary>
-/// <param name="customDefinitions">ユーザが定義した型情報</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
-/// <exception cref="FsYaml.FsYamlException">ロードに失敗した場合</exception>
+/// <param name="customDefinitions">User-defined type information</param>
+/// <param name="yamlStr">Yaml string to load</param>
+/// <exception cref="FsYaml.FsYamlException">If loading fails</exception>
 let loadWith<'a> customDefinitions yamlStr = Representation.parse yamlStr |> Native.construct<'a> (Seq.append customDefinitions TypeDefinitions.defaultDefinitions)
 
 /// <summary>
-/// Yaml文字列を<c>'a</c>のオブジェクトとしてロードします。ロードに失敗した場合はNoneを返します。
+/// Load the Yaml string as an object of <c>&#39;a</ c>. Returns None if loading fails.
 /// </summary>
-/// <param name="yamlStr">ロードするYaml文字列</param>
+/// <param name="yamlStr">Yaml string to load</param>
 let tryLoad<'a> yamlStr =
   try
     Some (load<'a> yamlStr)
@@ -51,11 +51,11 @@ let tryLoad<'a> yamlStr =
     _ -> None
 
 /// <summary>
-/// 指定した型情報とデフォルトの型情報をもとに、Yaml文字列を<c>'a</c>のオブジェクトとしてロードします。ロードに失敗した場合はNoneを返します。
-/// 指定された型情報は、デフォルトの型情報より優先されます。そして、デフォルトの型情報と同じ型を指定すると、ロードの挙動を上書きできます。
+/// Loads a Yaml string as an <c>&#39;a</ c> object based on the specified type information and the default type information. Returns None if loading fails.
+/// The specified type information takes precedence over the default type information. You can then override the load behavior by specifying the same type as the default type information.
 /// </summary>
-/// <param name="customDefinitions">ユーザが定義した型情報</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
+/// <param name="customDefinitions">User-defined type information</param>
+/// <param name="yamlStr">Yaml string to load</param>
 let tryLoadWith<'a> customDefinitions yamlStr =
   try
     Some (loadWith<'a> customDefinitions yamlStr)
@@ -63,27 +63,27 @@ let tryLoadWith<'a> customDefinitions yamlStr =
     _ -> None
 
 /// <summary>
-/// Yaml文字列を<c>typ</c>のオブジェクトとしてロードします。
+/// Load the Yaml string as an object of <c>typ</ c>.
 /// </summary>
-/// <param name="typ">ロードする型</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
-/// <exception cref="FsYaml.FsYamlException">ロードに失敗した場合</exception>
+/// <param name="typ">Type to load</param>
+/// <param name="yamlStr">Yaml string to load</param>
+/// <exception cref="FsYaml.FsYamlException">If loading fails</exception>
 let loadUntyped typ yamlStr = Representation.parse yamlStr |> Native.constructUntyped typ TypeDefinitions.defaultDefinitions
 
 /// <summary>
-/// 指定した型情報とデフォルトの型情報をもとに、Yaml文字列を<c>typ</c>のオブジェクトとしてロードします。
-/// 指定された型情報は、デフォルトの型情報より優先されます。そして、デフォルトの型情報と同じ型を指定すると、ロードの挙動を上書きできます。
+/// Loads a Yaml string as an <c>typ</c> object based on the specified type information and the default type information.
+/// The specified type information takes precedence over the default type information. You can then override the load behavior by specifying the same type as the default type information.
 /// </summary>
-/// <param name="typ">ロードする型</param>
-/// <param name="customDefinitions">ユーザが定義した型情報</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
+/// <param name="typ">type to load</param>
+/// <param name="customDefinitions">User-defined type information</param>
+/// <param name="yamlStr">Yaml string to load</param>
 let loadWithUntyped typ customDefinitions yamlStr = Representation.parse yamlStr |> Native.constructUntyped typ (Seq.append customDefinitions TypeDefinitions.defaultDefinitions)
 
 /// <summary>
-/// Yaml文字列を<c>typ</c>のオブジェクトとしてロードします。ロードに失敗した場合はNoneを返します。
+/// Load the Yaml string as an object of <c>typ</c>. Returns None if loading fails.
 /// </summary>
-/// <param name="typ">ロードする型</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
+/// <param name="typ">type to load</param>
+/// <param name="yamlStr">Yaml string to load</param>
 let tryLoadUntyped typ yamlStr =
   try
     Some (loadUntyped typ yamlStr)
@@ -91,12 +91,12 @@ let tryLoadUntyped typ yamlStr =
     _ -> None
 
 /// <summary>
-/// 指定した型情報とデフォルトの型情報をもとに、Yaml文字列を<c>typ</c>のオブジェクトとしてロードします。ロードに失敗した場合はNoneを返します。
-/// 指定された型情報は、デフォルトの型情報より優先されます。そして、デフォルトの型情報と同じ型を指定すると、ロードの挙動を上書きできます。
+/// Loads a Yaml string as an <c>typ</c> object based on the specified type information and the default type information. Returns None if loading fails.
+/// The specified type information takes precedence over the default type information. You can then override the load behavior by specifying the same type as the default type information.
 /// </summary>
-/// <param name="typ">ロードする型</param>
-/// <param name="customDefinitions">ユーザが定義した型情報</param>
-/// <param name="yamlStr">ロードするYaml文字列</param>
+/// <param name="typ">type to load</param>
+/// <param name="customDefinitions">User-defined type information</param>
+/// <param name="yamlStr">Yaml string to load</param>
 let tryLoadWithUntyped typ customDefinitions yamlStr =
   try
     Some (loadWithUntyped typ customDefinitions yamlStr)
@@ -104,18 +104,18 @@ let tryLoadWithUntyped typ customDefinitions yamlStr =
     _ -> None
 
 /// <summary>
-/// オブジェクトをYaml文字列へダンプします。
+/// Dump the object to a Yaml string.
 /// </summary>
-/// <param name="obj">ダンプするオブジェクト</param>
-/// <exception cref="FsYaml.FsYamlException">ダンプに失敗した場合</exception>
+/// <param name="obj">Object to dump</param>
+/// <exception cref="FsYaml.FsYamlException">If the dump fails</exception>
 let dump<'a> obj = Native.represent<'a> TypeDefinitions.defaultDefinitions obj |> Representation.present
 
 
 /// <summary>
-/// 指定した型情報とデフォルトの型情報をもとに、オブジェクトをYaml文字列へダンプします。
-/// 指定された型情報は、デフォルトの型情報より優先されます。そして、デフォルトの型情報と同じ型を指定すると、ダンプの挙動を上書きできます。
+/// Dump the object to a Yaml string based on the specified type information and the default type information.
+/// The specified type information takes precedence over the default type information. You can then override the dump behavior by specifying the same type as the default type information.
 /// </summary>
-/// <param name="customDefinitions">ユーザが定義した型情報</param>
-/// <param name="obj">ダンプするオブジェクト</param>
-/// <exception cref="FsYaml.FsYamlException">ダンプに失敗した場合</exception>
+/// <param name="customDefinitions">User-defined type information</param>
+/// <param name="obj">Objects to dump</param>
+/// <exception cref="FsYaml.FsYamlException">If dump fails</exception>
 let dumpWith<'a> customDefinitions obj = Native.represent<'a> (Seq.append customDefinitions TypeDefinitions.defaultDefinitions) obj |> Representation.present

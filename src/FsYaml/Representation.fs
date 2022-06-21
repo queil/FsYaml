@@ -7,6 +7,7 @@ open System.IO
 open FsYaml.Utility
 open FsYaml.RepresentationTypes
 open System.Collections.Generic
+open YamlDotNet.Serialization
 
 let getPosition (mark: Mark) = Some { Line = mark.Line; Column = mark.Column }
 
@@ -33,7 +34,7 @@ let rec yamlDotNetToIntermediate (node: YamlNode) =
       match String.toLower scalarNode.Value with
       | "" | "null" | "~" -> Null position
       | _ -> Scalar (Plain scalarNode.Value, position)
-    | notSupported -> raise (FsYamlException.WithPosition(position, Resources.getString "notSupportedScalarType", sprintf "%A" notSupported))
+    | notSupported -> raise (FsYamlException.WithPosition(position, Resources.getString "notSupportedScalarType", $"%A{notSupported}"))
   | :? YamlSequenceNode as seqNode ->
     let children =
       seqNode.Children
@@ -88,11 +89,11 @@ let rec intermediateToYamlDotNet (yaml: YamlObject) =
     node.Style <- ScalarStyle.Plain
     node :> YamlNode
 
+let private serializer = SerializerBuilder().Build();
 let toYamlString (yaml: YamlNode) =
-  let stream = YamlStream(YamlDocument(yaml))
-  let writer = new StringWriter()
-  stream.Save(writer, false)
-  let str = writer.ToString()
-  str.Substring(0, str.Length - 5) // remove "...\r\n"
+  use sw = new StringWriter()
+  serializer.Serialize(sw, yaml)
+  sw.ToString()
+  
 
 let present = intermediateToYamlDotNet >> toYamlString

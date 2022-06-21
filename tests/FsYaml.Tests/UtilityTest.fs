@@ -78,7 +78,7 @@ module ObjectElementSeq =
   let ``空のseqをint seqにキャストできる`` = test {
     let xs = Seq.empty<obj>
     let actual = ObjectElementSeq.cast typeof<int> xs
-    do! unbox<int seq> actual |> should equalSeq (Seq.empty<int>)
+    do! unbox<int seq> actual |> should equalSeq Seq.empty<int>
   }
 
   let ``obj seqをint listに変換できる`` = test {
@@ -115,7 +115,7 @@ module ObjectElementSeq =
   let ``空のseqをint[]に変換できる`` = test {
     let xs = Seq.empty<obj>
     let actual = ObjectElementSeq.toArray typeof<int> xs
-    do! unbox<int[]> actual |> should equal (Array.empty<int>)
+    do! unbox<int[]> actual |> should equal Array.empty<int>
   }
 
 module BoxedSeqTest =

@@ -1,5 +1,5 @@
 ﻿/// <summary>
-/// ユーザ定義の<see cref="FsYaml.NativeTypes.TypeDefinition" />を作成するためのヘルパ関数を提供します。
+/// Provides a helper function to create a user-defined <see cref="FsYaml.NativeTypes.TypeDefinition" />.
 /// </summary>
 module FsYaml.CustomTypeDefinition
 
@@ -8,82 +8,82 @@ open FsYaml.Utility
 open FsYaml.RepresentationTypes
 
 /// <summary>
-/// Constructorが<c>YamlObject.Scalar</c>を期待したがそうでなかった事を表す例外を生成します。
+/// The Constructor raises an exception stating that it expected <c>YamlObject.Scalar</c> but not.
 /// </summary>
-/// <param name="t">変換しようとした型</param>
-/// <param name="actual">実際のYaml</param>
+/// <param name="t">The type you tried to convert</param>
+/// <param name="actual">Actual Yaml</param>
 let mustBeScalar t actual = FsYamlException.WithYaml(actual, Resources.getString "mustBeScalar", Type.print t, YamlObject.nodeTypeName actual)
 /// <summary>
-/// Constructorが<c>YamlObject.Sequence</c>を期待したがそうでなかった事を表す例外を生成します。
+/// The Constructor raises an exception stating that it expected <c> YamlObject.Sequence</c> but did not.
 /// </summary>
-/// <param name="t">変換しようとした型</param>
-/// <param name="actual">実際のYaml</param>
+/// <param name="t">The type you tried to convert</param>
+/// <param name="actual">Actual Yaml</param>
 let mustBeSequence t actual = FsYamlException.WithYaml(actual, Resources.getString "mustBeSequence", Type.print t, YamlObject.nodeTypeName actual)
 /// <summary>
-/// Constructorが<c>YamlObject.Mapping</c>を期待したがそうでなかった事を表す例外を生成します。
+/// The Constructor raises an exception stating that <c>YamlObject.Mapping</c> was expected but not.
 /// </summary>
-/// <param name="t">変換しようとした型</param>
-/// <param name="actual">実際のYaml</param>
+/// <param name="t">The type you tried to convert</param>
+/// <param name="actual">Actual Yaml</param>
 let mustBeMapping t actual = FsYamlException.WithYaml(actual, Resources.getString "mustBeMapping", Type.print t, YamlObject.nodeTypeName actual)
 
 /// <summary>
-/// <c>YamlObject.Scalar</c>からオブジェクトを生成します。
+/// Create an object from <c>YamlObject.Scalar</ c>.
 /// </summary>
-/// <param name="f"><c>YamlObject.Scalar</c>の値をオブジェクトへ変換する関数</param>
+/// <param name="f">Function to convert the value of <c>YamlObject.Scalar </c> to an object</param>
 let constructFromScalar f = fun construct' t yaml ->
   match yaml with
   | Scalar (s, _) -> Scalar.value s |> f |> box
   | otherwise -> raise (mustBeScalar t otherwise)
 /// <summary>
-/// オブジェクトからPlainな<c>YamlObject.Scalar</c>へ変換します。
+/// Converts an object to a plain <c> YamlObject.Scalar </c>.
 /// </summary>
-/// <param name="f">オブジェクトを<c>YamlObject.Scalar</c>の値へ変換する関数</param>
+/// <param name="f">A function that transforms an object into the value of <c>YamlObject.Scalar </c></param>
 let representAsPlain f = fun represent t obj -> Scalar (Plain (f obj), None)
 /// <summary>
-/// オブジェクトからNonPlainな<c>YamlObject.Scalar</c>へ変換します。
+/// Converts an object to a NonPlain <c>YamlObject.Scalar</ c>.
 /// </summary>
-/// <param name="f">オブジェクトを<c>YamlObject.Scalar</c>の値へ変換する関数</param>
+/// <param name="f">A function that transforms an object into the value of <c> YamlObject.Scalar </c></param>
 let representAsNonPlain f = fun represent t obj -> Scalar (NonPlain (f obj), None)
 
 /// <summary>
-/// Seq型のオブジェクトから<c>YamlObject.Sequence</c>へ変換します。
+/// Convert from Seq type object to <c>YamlObject.Sequence</c>.
 /// </summary>
 let representSeqAsSequence = fun represent t obj ->
   let elementType = RuntimeSeq.elementType t
   let values = RuntimeSeq.map (represent elementType) t obj |> Seq.toList
   Sequence (values, None)
 
-/// Nullの可能性がある値のConstructor/Representerを提供します。
+/// Provides a Constructor / Representer with a potentially null value.
 module MaybeNull =
   /// <summary>
-  /// <c>YamlObject.Scalar</c>からオブジェクトを生成します。値が<c>YamlObject.Null</c>の場合はnullを返します。
+  /// Create an object from <c>YamlObject.Scalar</ c>. Returns null if the value is <c>YamlObject.Null</ c>.
   /// </summary>
-  /// <param name="f"><c>YamlObject.Scalar</c>の値をオブジェクトへ変換する関数</param>
+  /// <param name="f">Function that converts the value of<c>YamlObject.Scalar</c></param>
   let constructFromScalar f = fun construct' t yaml ->
     match yaml with
     | Scalar (s, _) -> Scalar.value s |> f |> box
     | Null _ -> null
     | otherwise -> raise (mustBeScalar t otherwise)
   /// <summary>
-  /// オブジェクトからPlainな<c>YamlObject.Scalar</c>へ変換します。オブジェクトのnullの場合は<c>YamlObject.Null</c>を返します。
+  /// Converts an object to a plain <c>YamlObject.Scalar</c>. If the object is null, <c>YamlObject.Null</c> is returned.
   /// </summary>
-  /// <param name="f">オブジェクトを<c>YamlObject.Scalar</c>の値へ変換する関数</param>
+  /// <param name="f">A function that transforms an object into the value of <c> YamlObject.Scalar</c></param>
   let representAsPlain f = fun represent t obj ->
     match obj with
     | null -> Null None
     | _ -> Scalar (Plain (f obj), None)
   /// <summary>
-  /// オブジェクトからNonPlainな<c>YamlObject.Scalar</c>へ変換します。オブジェクトのnullの場合は<c>YamlObject.Null</c>を返します。
+  /// Converts an object to a NonPlain <c>YamlObject.Scalar</ c>. If the object is null, <c>YamlObject.Null</ c> is returned.
   /// </summary>
-  /// <param name="f">オブジェクトを<c>YamlObject.Scalar</c>の値へ変換する関数</param>
+  /// <param name="f">A function that transforms an object into the value of <c>YamlObject.Scalar</c></param>
   let representAsNonPlain f = fun represent t obj ->
     match obj with
     | null -> Null None
     | _ -> Scalar (NonPlain (f obj), None)
 
 /// <summary>
-/// 指定した型がジェネリック型定義と一致するか返します。
+/// Returns whether the specified type matches the generic type definition.
 /// </summary>
-/// <param name="genericTypeDef">期待するジェネリック型定義</param>
-/// <param name="x">テストする型</param>
+/// <param name="genericTypeDef">Expected generic type definition</param>
+/// <param name="x">Type to test</param>
 let isGenericTypeDef genericTypeDef (x: Type) = x.IsGenericType && x.GetGenericTypeDefinition() = genericTypeDef

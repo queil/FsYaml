@@ -1,148 +1,120 @@
 ﻿module DumpingTest
 
-open Persimmon
-open UseTestNameByReflection
-open Assertions
+open System
+open Expecto
 
 open FsYaml
 open FsYaml.RepresentationTypes
 
-let represent<'a> value = Native.represent<'a> TypeDefinitions.defaultDefinitions value
-
-let scalar x = Scalar (x, None)
-let plain x = scalar (Plain x)
-let nonPlain x = scalar (NonPlain x)
-let sequence x = Sequence (x, None)
-let mapping x = Mapping (Map.ofSeq x, None)
-let null' = Null None
-
-module DumpTest =
-  open System
-
-  let ``intを変換できる`` = test {
-    let actual = represent 1
-    do! actual |> should equal (plain "1")
-  }
-
-  let ``int64を変換できる`` = test {
-    let actual = represent 20L
-    do! actual |> should equal (plain "20")
-  }
-
-  let ``floatを変換できる`` =
-    let body (value, expected) = test {
-      let actual = represent value
-      do! actual |> should equal (plain expected)
-    }
-    parameterize {
-      case (Double.NaN, ".NaN")
-      case (Double.PositiveInfinity, "+.inf")
-      case (Double.NegativeInfinity, "-.inf")
-      case (45.5, "45.5")
-      run body
-    }
-    
-  let ``stringを変換できる`` = test {
-    let actual = represent "this is text"
-    do! actual |> should equal (nonPlain "this is text")
-  }
-
-  let ``nullのstringを変換できる`` = test {
-    let actual = represent (null: string)
-    do! actual |> should equal null'
-  }
-
-  let ``boolを変換できる`` =
-    let body (value, expected) = test {
-      let actual = represent value
-      do! actual |> should equal (plain expected)
-    }
-    parameterize {
-      case (true, "true")
-      case (false, "false")
-      run body
-    }
-    
-  let ``decimalを変換できる`` = test {
-    let actual = represent 30.5m
-    do! actual |> should equal (plain "30.5")
-  }
-
-  let ``DateTimeを変換できる`` = test {
-    let actual = represent (DateTime.Parse("2015-02-12 11:22:33.111"))
-    do! actual |> should equal (nonPlain "2015-02-12 11:22:33.111")
-  }
-
-  let ``TimeSpanを変換できる`` = test {
-    let actual = represent (TimeSpan.Parse("11:22:33.444"))
-    do! actual |> should equal (nonPlain "11:22:33.444")
-  }
-
+module Types=
   type Record = { FieldA: int; FieldB: string }
-  let ``recordを変換できる`` = test {
-    let actual = represent { FieldA = 20; FieldB = "abc" }
-    do! actual |> should equal (mapping [ (plain "FieldA", plain "20"); (plain "FieldB", nonPlain "abc") ])
-  }
+  
+module Helper =
+  let represent<'a> value = Native.represent<'a> TypeDefinitions.defaultDefinitions value
 
-  let ``tupleを変換できる`` = test {
-    let actual = represent (1, 3, "a")
-    do! actual |> should equal (sequence [ (plain "1"); (plain "3"); (nonPlain "a") ])
-  }
+  let scalar x = Scalar (x, None)
+  let plain x = scalar (Plain x)
+  let nonPlain x = scalar (NonPlain x)
+  let sequence x = Sequence (x, None)
+  let mapping x = Mapping (Map.ofSeq x, None)
+  let null' = Null None
 
-  let ``listを変換できる`` = test {
-    let actual = represent [ "a"; "b"; "c" ]
-    do! actual |> should equal (sequence [ (nonPlain "a"); (nonPlain "b"); (nonPlain "c") ])
-  }
+open Types
+open Helper
 
-  let ``arrayを変換できる`` = test {
-    let actual = represent [| "a"; "b"; "c" |]
-    do! actual |> should equal (sequence [ (nonPlain "a"); (nonPlain "b"); (nonPlain "c") ])
-  }
+[<Tests>]
+let tests =
+ 
+  testList "Dumping tests" [
 
-  let ``seqを変換できる`` = test {
-    let actual = represent (seq { 1..3 })
-    do! actual |> should equal (sequence [ (plain "1"); (plain "2"); (plain "3") ])
-  }
+    testCase "can convert int" <| fun () ->
+     "Must be equal" |> Expect.equal (represent 1) (plain "1")
+    
+    testCase "can convert int64" <| fun () ->
+     "Must be equal" |> Expect.equal (represent 20L) (plain "20")
+    
+    testCase "can convert float - NaN" <| fun () ->
+      "Must be equal" |> Expect.equal (represent Double.NaN) (plain ".NaN")
+   
+    testCase "can convert float - +.inf" <| fun () ->
+      "Must be equal" |> Expect.equal (represent Double.PositiveInfinity) (plain "+.inf")
+    
+    testCase "can convert float - -.inf" <| fun () ->
+      "Must be equal" |> Expect.equal (represent Double.NegativeInfinity) (plain "-.inf")
+      
+    testCase "can convert float - 45.5" <| fun () ->
+      "Must be equal" |> Expect.equal (represent 45.5) (plain "45.5") 
+  
+    testCase "can convert string" <| fun () ->
+      "Must be equal" |> Expect.equal (represent "this is text") (nonPlain "this is text") 
+  
+    testCase "can convert null string" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (null: string)) null'
+  
+    testCase "can convert bool - false" <| fun () ->
+      "Must be equal" |> Expect.equal (represent false) (plain "false")
+      
+    testCase "can convert bool - true" <| fun () ->
+      "Must be equal" |> Expect.equal (represent true) (plain "true")
+      
+    testCase "can convert decimal" <| fun () ->
+      "Must be equal" |> Expect.equal (represent 30.5m) (plain "30.5")
+      
+    testCase "can convert DateTime" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (DateTime.Parse("2015-02-12 11:22:33.111"))) (nonPlain "2015-02-12 11:22:33.111")
+      
+    testCase "can convert TimeSpan" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (TimeSpan.Parse("11:22:33.444"))) (nonPlain "11:22:33.444")
+      
+    testCase "can convert record" <| fun () ->
+      "Must be equal" |> Expect.equal (represent { FieldA = 20; FieldB = "abc" }) (mapping [ (plain "FieldA", plain "20"); (plain "FieldB", nonPlain "abc") ])
+      
+    testCase "can convert tuple" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (1, 3, "a")) (sequence [ (plain "1"); (plain "3"); (nonPlain "a") ])
+      
+    testCase "can convert list" <| fun () ->
+      "Must be equal" |> Expect.equal (represent [ "a"; "b"; "c" ]) (sequence [ (nonPlain "a"); (nonPlain "b"); (nonPlain "c")])
+      
+    testCase "can convert array" <| fun () ->
+      "Must be equal" |> Expect.equal (represent [| "a"; "b"; "c" |]) (sequence [ (nonPlain "a"); (nonPlain "b"); (nonPlain "c")])
+  
+    testCase "can convert seq" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (seq { 1..3 })) (sequence [ (plain "1"); (plain "2"); (plain "3")])
+      
+    testCase "can convert set" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (set [ 1; 2; 3 ])) (sequence [ (plain "1"); (plain "2"); (plain "3")])
 
-  let ``setを変換できる`` = test {
-    let actual = represent (set [ 1; 2; 3 ])
-    do! actual |> should equal (sequence [ (plain "1"); (plain "2"); (plain "3") ])
-  }
-
-  let ``Mapを変換できる`` = test {
-    let actual = represent (Map.ofList [ ("a", 1); ("b", 2) ])
-    do! actual |> should equal (mapping [ (nonPlain "a", plain "1"); (nonPlain "b", plain "2") ])
-  }
-
-  let ``Option.Someを変換できる`` = test {
-    let actual = represent (Some "abc")
-    do! actual |> should equal (nonPlain "abc")
-  }
-
-  let ``Option.Noneを変換できる`` = test {
-    let actual = represent (None: int option)
-    do! actual |> should equal null'
-  }
+    testCase "can convert map" <| fun () ->
+      "Must be equal" |> Expect.equal (represent (Map.ofList [ ("a", 1); ("b", 2) ])) (mapping [ (nonPlain "a", plain "1"); (nonPlain "b", plain "2") ])
+      
+    testCase "can convert Option.Some" <| fun () ->
+     "Must be equal" |> Expect.equal (represent (Some "abc")) (nonPlain "abc")
+     
+    testCase "can convert Option.None" <| fun () ->
+     "Must be equal" |> Expect.equal (represent (None: int option)) null'
+  ]
   
 module DumpRecordTest =
   open System
 
   let representOmittingDefaultFields<'a> value = Native.represent<'a> (TypeDefinitions.recordDefOmittingDefaultFields :: TypeDefinitions.defaultDefinitions) value
-
+ 
   type TestRecord =
     { FieldA: int; FieldB: option<int> }
   with
     static member DefaultFieldA = -1
+    
+  [<Tests>]
+  let tests =
+   
+    testList "Dumping records tests" [
 
-  let ``デフォルトでは省略可能なフィールドも出力される`` = test {
-    let actual = represent { FieldA = -1; FieldB = None }
-    do! actual |> should equal (mapping [(plain "FieldA", plain "-1"); (plain "FieldB", null')])
-  }
-
-  let ``省略可能なフィールドを出力しない定義が機能する`` = test {
-      let actual = representOmittingDefaultFields { FieldA = -1; FieldB = None }
-      do! actual |> should equal (mapping [ ])
-    }
+      testCase "By default, optional fields are also output." <| fun () ->
+       "Must be equal" |> Expect.equal (represent { FieldA = -1; FieldB = None }) (mapping [(plain "FieldA", plain "-1"); (plain "FieldB", null')])
+       
+      testCase "Definitions that do not output optional fields work" <| fun () ->
+       "Must be equal" |> Expect.equal (representOmittingDefaultFields { FieldA = -1; FieldB = None }) (mapping [ ])
+    ]
 
 module DumpUnionTest =
   type TestUnion =
@@ -152,27 +124,26 @@ module DumpUnionTest =
     | OneNamedField of fieldA: int
     | NamedFields of fieldA: int * fieldB: string
 
-  let ``値がないケースを変換できる`` = test {
-    let actual = represent NoValue
-    do! actual |> should equal (plain "NoValue")
-  }
 
-  let ``値が1つのケースを変換できる`` = test {
-    let actual = represent (OneField 23)
-    do! actual |> should equal (mapping [ (plain "OneField", plain "23") ])
-  }
-
-  let ``値が複数のケースを変換できる`` = test {
-    let actual = represent (ManyFields (1, 3))
-    do! actual |> should equal (mapping [ (plain "ManyFields", sequence [ (plain "1"); (plain "3") ])])
-  }
-
-  let ``値が1つの名前付きフィールドを変換できる`` = test {
-    let actual = represent (OneNamedField (fieldA = 1))
-    do! actual |> should equal (mapping [ (plain "OneNamedField", mapping [ (plain "fieldA", plain "1") ]) ])
-  }
-
-  let ``値が複数の名前付きフィールドを変換できる`` = test {
-    let actual = represent (NamedFields (fieldA = 3, fieldB = "abc"))
-    do! actual |> should equal (mapping [ (plain "NamedFields", mapping [ (plain "fieldA", plain "3"); (plain "fieldB", nonPlain "abc") ]) ])
-  }
+    
+  [<Tests>]
+  let tests =
+   
+    testList "Dumping discriminated unions tests" [
+        
+        testCase "Can convert cases with no value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent NoValue) (plain "NoValue")
+          
+        testCase "Can convert cases with one value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (OneField 23)) (mapping [ (plain "OneField", plain "23") ])
+          
+        testCase "Can convert cases with multiple values" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (ManyFields (1, 3))) (mapping [ (plain "ManyFields", sequence [ (plain "1"); (plain "3") ])])
+        
+        testCase "Can convert named fields with one value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (OneNamedField (fieldA = 1))) (mapping [ (plain "OneNamedField", mapping [ (plain "fieldA", plain "1") ]) ])
+          
+        testCase "Can convert named fields with multiple values" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (NamedFields (fieldA = 3, fieldB = "abc"))) (mapping [ (plain "NamedFields", mapping [ (plain "fieldA", plain "3"); (plain "fieldB", nonPlain "abc") ]) ])
+       
+    ]
