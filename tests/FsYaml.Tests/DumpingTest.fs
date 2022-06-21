@@ -9,7 +9,6 @@ open FsYaml.RepresentationTypes
 module Types=
   type Record = { FieldA: int; FieldB: string }
   
-
 module Helper =
   let represent<'a> value = Native.represent<'a> TypeDefinitions.defaultDefinitions value
 
@@ -19,7 +18,6 @@ module Helper =
   let sequence x = Sequence (x, None)
   let mapping x = Mapping (Map.ofSeq x, None)
   let null' = Null None
-
 
 open Types
 open Helper
@@ -95,27 +93,28 @@ let tests =
     testCase "can convert Option.None" <| fun () ->
      "Must be equal" |> Expect.equal (represent (None: int option)) null'
   ]
-(*
   
 module DumpRecordTest =
   open System
 
   let representOmittingDefaultFields<'a> value = Native.represent<'a> (TypeDefinitions.recordDefOmittingDefaultFields :: TypeDefinitions.defaultDefinitions) value
-
+ 
   type TestRecord =
     { FieldA: int; FieldB: option<int> }
   with
     static member DefaultFieldA = -1
+    
+  [<Tests>]
+  let tests =
+   
+    testList "Dumping records tests" [
 
-  let ``デフォルトでは省略可能なフィールドも出力される`` = test {
-    let actual = represent { FieldA = -1; FieldB = None }
-    do! actual |> should equal (mapping [(plain "FieldA", plain "-1"); (plain "FieldB", null')])
-  }
-
-  let ``省略可能なフィールドを出力しない定義が機能する`` = test {
-      let actual = representOmittingDefaultFields { FieldA = -1; FieldB = None }
-      do! actual |> should equal (mapping [ ])
-    }
+      testCase "By default, optional fields are also output." <| fun () ->
+       "Must be equal" |> Expect.equal (represent { FieldA = -1; FieldB = None }) (mapping [(plain "FieldA", plain "-1"); (plain "FieldB", null')])
+       
+      testCase "Definitions that do not output optional fields work" <| fun () ->
+       "Must be equal" |> Expect.equal (representOmittingDefaultFields { FieldA = -1; FieldB = None }) (mapping [ ])
+    ]
 
 module DumpUnionTest =
   type TestUnion =
@@ -125,28 +124,26 @@ module DumpUnionTest =
     | OneNamedField of fieldA: int
     | NamedFields of fieldA: int * fieldB: string
 
-  let ``値がないケースを変換できる`` = test {
-    let actual = represent NoValue
-    do! actual |> should equal (plain "NoValue")
-  }
 
-  let ``値が1つのケースを変換できる`` = test {
-    let actual = represent (OneField 23)
-    do! actual |> should equal (mapping [ (plain "OneField", plain "23") ])
-  }
-
-  let ``値が複数のケースを変換できる`` = test {
-    let actual = represent (ManyFields (1, 3))
-    do! actual |> should equal (mapping [ (plain "ManyFields", sequence [ (plain "1"); (plain "3") ])])
-  }
-
-  let ``値が1つの名前付きフィールドを変換できる`` = test {
-    let actual = represent (OneNamedField (fieldA = 1))
-    do! actual |> should equal (mapping [ (plain "OneNamedField", mapping [ (plain "fieldA", plain "1") ]) ])
-  }
-
-  let ``値が複数の名前付きフィールドを変換できる`` = test {
-    let actual = represent (NamedFields (fieldA = 3, fieldB = "abc"))
-    do! actual |> should equal (mapping [ (plain "NamedFields", mapping [ (plain "fieldA", plain "3"); (plain "fieldB", nonPlain "abc") ]) ])
-  }
-*)
+    
+  [<Tests>]
+  let tests =
+   
+    testList "Dumping discriminated unions tests" [
+        
+        testCase "Can convert cases with no value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent NoValue) (plain "NoValue")
+          
+        testCase "Can convert cases with one value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (OneField 23)) (mapping [ (plain "OneField", plain "23") ])
+          
+        testCase "Can convert cases with multiple values" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (ManyFields (1, 3))) (mapping [ (plain "ManyFields", sequence [ (plain "1"); (plain "3") ])])
+        
+        testCase "Can convert named fields with one value" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (OneNamedField (fieldA = 1))) (mapping [ (plain "OneNamedField", mapping [ (plain "fieldA", plain "1") ]) ])
+          
+        testCase "Can convert named fields with multiple values" <| fun () ->
+          "Must be equal" |> Expect.equal (represent (NamedFields (fieldA = 3, fieldB = "abc"))) (mapping [ (plain "NamedFields", mapping [ (plain "fieldA", plain "3"); (plain "fieldB", nonPlain "abc") ]) ])
+       
+    ]
