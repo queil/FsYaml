@@ -20,7 +20,7 @@ module RepresentationTypes =
       | NonPlain x -> x
 
   /// Position in Yaml string
-  type Position = { Line: int; Column: int; }
+  type Position = { Line: int64; Column: int64; }
 
   /// Represents Yaml.
   type YamlObject =
