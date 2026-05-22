@@ -1,145 +1,88 @@
-﻿module UtilityTest
+module UtilityTest
 
+open System
+open Expecto
 open FsYaml.Utility
-open Persimmon
-open UseTestNameByReflection
-open Assertions
+open Microsoft.FSharp.Reflection
 
-module TypeTest =
-  type GenericType<'a> = GeneticType of 'a
+type GenericType<'a> = GeneticType of 'a
 
-  let print =
-    let body (t, expected) = test {
-      do! should equal expected (Type.print t)
-    }
-    parameterize {
-      case (typeof<int>, "int")
-      case (typeof<System.DateTime>, "DateTime")
-      case (typeof<int * string>, "int * string")
-      case (typeof<int * (int * int)>, "int * (int * int)")
-      case (typeof<int list>, "int list")
-      case (typeof<int[] list>, "int[] list")
-      case (typeof<(int * int) list>, "(int * int) list")
-      case (typeof<int * int list>, "int * int list")
-      case (typeof<Map<string, int>>, "Map<string, int>")
-      case (typeof<GenericType<int>>, "GenericType<int>")
-      case (typeof<int[]>, "int[]")
-      run body
-    }
+type TestAttr() = inherit Attribute()
+[<TestAttr>] type WithTestAttr() = class end
+type WithoutTestAttr() = class end
+type UtilityRecord = { Field: int }
+type UtilityUnion = UtilityCase
 
-module Attribute =
-  open System
+[<Tests>]
+let tests =
+  testList "Utility" [
 
-  type TestAttribute() = inherit Attribute()
+    testList "Type.print" [
+      for t, expected in [
+        typeof<int>,               "int"
+        typeof<DateTime>,          "DateTime"
+        typeof<int * string>,      "int * string"
+        typeof<int * (int * int)>, "int * (int * int)"
+        typeof<int list>,          "int list"
+        typeof<int[] list>,        "int[] list"
+        typeof<(int * int) list>,  "(int * int) list"
+        typeof<int * int list>,    "int * int list"
+        typeof<Map<string, int>>,  "Map<string, int>"
+        typeof<GenericType<int>>,  "GenericType<int>"
+        typeof<int[]>,             "int[]"
+      ] do
+        yield testCase expected <| fun () ->
+          Expect.equal (Type.print t) expected ""
+    ]
 
-  [<TestAttribute>]
-  type WithAttribute() = class end
+    testList "Attribute.tryGetCustomAttribute" [
+      testCase "returns Some when attribute present" <| fun () ->
+        Expect.isSome (Attribute.tryGetCustomAttribute<TestAttr> typeof<WithTestAttr>) ""
+      testCase "returns None when attribute absent" <| fun () ->
+        Expect.isNone (Attribute.tryGetCustomAttribute<TestAttr> typeof<WithoutTestAttr>) ""
+    ]
 
-  type WithoutAttribute() = class end
+    testCase "PropertyInfo.print formats as Type.Field" <| fun () ->
+      let field = FSharpType.GetRecordFields(typeof<UtilityRecord>).[0]
+      Expect.equal (PropertyInfo.print field) "UtilityRecord.Field" ""
 
-  let tryGetCustomAttribute =
-    let body (t, expected) = test {
-      let actual = Attribute.tryGetCustomAttribute<TestAttribute> t
-      do! Option.isSome actual |> should equal expected
-    }
-    parameterize {
-      case (typeof<WithAttribute>, true)
-      case (typeof<WithoutAttribute>, false)
-      run body
-    }
+    testCase "Union.printCase formats as Type.Case" <| fun () ->
+      let case = FSharpType.GetUnionCases(typeof<UtilityUnion>).[0]
+      Expect.equal (Union.printCase case) "UtilityUnion.UtilityCase" ""
 
-module PropertyInfoTest =
-  open Microsoft.FSharp.Reflection
+    testList "ObjectElementSeq" [
+      testCase "cast obj seq to int seq" <| fun () ->
+        let xs = seq { 1..3 } |> Seq.map box
+        Expect.sequenceEqual (unbox<int seq> (ObjectElementSeq.cast typeof<int> xs)) (seq { 1..3 }) ""
+      testCase "cast empty obj seq to int seq" <| fun () ->
+        Expect.sequenceEqual (unbox<int seq> (ObjectElementSeq.cast typeof<int> (Seq.empty<obj>))) Seq.empty<int> ""
+      testCase "convert obj seq to int list" <| fun () ->
+        let xs = seq { 1..3 } |> Seq.map box
+        Expect.equal (unbox<int list> (ObjectElementSeq.toList typeof<int> xs)) [ 1..3 ] ""
+      testCase "convert empty obj seq to int list" <| fun () ->
+        Expect.equal (unbox<int list> (ObjectElementSeq.toList typeof<int> (Seq.empty<obj>))) ([]: int list) ""
+      testCase "convert obj pairs to Map<string, int>" <| fun () ->
+        let xs = [ "1", 2; "3", 4; "4", 5 ] |> List.map (fun (k, v) -> box k, box v)
+        Expect.equal (unbox<Map<string, int>> (ObjectElementSeq.toMap typeof<string> typeof<int> xs)) (Map.ofList [ "1", 2; "3", 4; "4", 5 ]) ""
+      testCase "convert empty obj pairs to Map<string, int>" <| fun () ->
+        Expect.equal (unbox<Map<string, int>> (ObjectElementSeq.toMap typeof<string> typeof<int> ([] : (obj * obj) list))) Map.empty<string, int> ""
+      testCase "convert obj seq to int[]" <| fun () ->
+        let xs = seq { 1..3 } |> Seq.map box
+        Expect.equal (unbox<int[]> (ObjectElementSeq.toArray typeof<int> xs)) [| 1..3 |] ""
+      testCase "convert empty obj seq to int[]" <| fun () ->
+        Expect.equal (unbox<int[]> (ObjectElementSeq.toArray typeof<int> (Seq.empty<obj>))) Array.empty<int> ""
+    ]
 
-  type TestRecord = { Field: int }
+    testList "RuntimeSeq.map" [
+      testCase "map over list" <| fun () ->
+        Expect.sequenceEqual (RuntimeSeq.map (fun x -> string x) typeof<int list> (box [ 1; 2; 3 ])) [ "1"; "2"; "3" ] ""
+      testCase "map over array" <| fun () ->
+        Expect.sequenceEqual (RuntimeSeq.map (fun x -> string x) typeof<int[]> (box [| 1; 2; 3 |])) [ "1"; "2"; "3" ] ""
+      testCase "map over seq" <| fun () ->
+        Expect.sequenceEqual (RuntimeSeq.map (fun x -> string x) typeof<int seq> (box (seq { 1..3 }))) [ "1"; "2"; "3" ] ""
+    ]
 
-  let ``{Type}.{Field}の形式でprintされる`` = test {
-    let field = FSharpType.GetRecordFields(typeof<TestRecord>).[0]
-    do! PropertyInfo.print field |> should equal "TestRecord.Field"
-  }
-
-module UnionTest =
-  open Microsoft.FSharp.Reflection
-
-  type TestUnion = Case
-
-  let ``{Type}.{Case}の形式でprintされる`` = test {
-    let unionCase = FSharpType.GetUnionCases(typeof<TestUnion>).[0]
-    do! Union.printCase unionCase |> should equal "TestUnion.Case"
-  }
-
-module ObjectElementSeq =
-  let ``obj seqをint seqにキャストできる`` = test {
-    let xs = seq { 1..3 } |> Seq.map box
-    let actual = ObjectElementSeq.cast typeof<int> xs
-    do! unbox<int seq> actual |> should equalSeq (seq { 1..3 })
-  }
-
-  let ``空のseqをint seqにキャストできる`` = test {
-    let xs = Seq.empty<obj>
-    let actual = ObjectElementSeq.cast typeof<int> xs
-    do! unbox<int seq> actual |> should equalSeq Seq.empty<int>
-  }
-
-  let ``obj seqをint listに変換できる`` = test {
-    let xs = seq { 1..3 } |> Seq.map box
-    let actual = ObjectElementSeq.toList typeof<int> xs
-    do! unbox<int list> actual |> should equal [ 1..3 ]
-  }
-
-  let ``空のseqをint listに変換できる`` = test {
-    let xs = Seq.empty<obj>
-    let actual = ObjectElementSeq.toList typeof<int> xs
-    do! unbox<int list> actual |> should equal ([]: int list)
-  }
-
-  let ``(obj * obj) seqをMap<string, int>に変換できる`` = test {
-    let xs = [ ("1", 2); ("3", 4); ("4", 5) ] |> Seq.map (fun (k, v) -> (box k, box v))
-    let actual = ObjectElementSeq.toMap typeof<string> typeof<int> xs
-    let expected = Map.ofList [ ("1", 2); ("3", 4); ("4", 5) ]
-    do! unbox<Map<string, int>> actual |> should equal expected
-  }
-
-  let ``空のseqをMap<string, int>に変換できる`` = test {
-    let xs = Seq.empty<obj * obj>
-    let actual = ObjectElementSeq.toMap typeof<string> typeof<int> xs
-    do! unbox<Map<string, int>> actual |> should equal Map.empty<string, int>
-  }
-
-  let ``obj seqをint[]に変換できる`` = test {
-    let xs = seq { 1..3 } |> Seq.map box
-    let actual = ObjectElementSeq.toArray typeof<int> xs
-    do! unbox<int[]> actual |> should equal [| 1..3 |]
-  }
-
-  let ``空のseqをint[]に変換できる`` = test {
-    let xs = Seq.empty<obj>
-    let actual = ObjectElementSeq.toArray typeof<int> xs
-    do! unbox<int[]> actual |> should equal Array.empty<int>
-  }
-
-module BoxedSeqTest =
-  let ``listに対してmapできる`` = test {
-    let xs = [ 1; 2; 3 ] |> box
-    let actual = (typeof<int list>, xs) ||> RuntimeSeq.map (fun x -> string x)
-    do! actual |> should equalSeq (Seq.ofList [ "1"; "2"; "3" ])
-  }
-
-  let ``arrayに対してmapできる`` = test {
-    let xs = [| 1; 2; 3 |] |> box
-    let actual = (typeof<int[]>, xs) ||> RuntimeSeq.map (fun x -> string x)
-    do! actual |> should equalSeq (Seq.ofList [ "1"; "2"; "3" ])
-  }
-
-  let ``seqに対してmapできる`` = test {
-    let xs = seq { 1..3 } |> box
-    let actual = (typeof<int seq>, xs) ||> RuntimeSeq.map (fun x -> string x)
-    do! actual |> should equalSeq (Seq.ofList [ "1"; "2"; "3" ])
-  }
-
-module BoxedMapTest =
-  let ``mapをtoSeqできる`` = test {
-    let map = Map.ofList [ ("a", 1); ("b", 2) ]
-    let actual = RuntimeMap.toSeq typeof<Map<string, int>> map
-    do! actual |> should equalSeq [ (box "a", box 1); (box "b", box 2) ]
-  }
+    testCase "RuntimeMap.toSeq converts map to key-value pairs" <| fun () ->
+      let map = Map.ofList [ "a", 1; "b", 2 ]
+      Expect.sequenceEqual (RuntimeMap.toSeq typeof<Map<string, int>> map) [ box "a", box 1; box "b", box 2 ] ""
+  ]
