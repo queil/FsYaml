@@ -17,20 +17,18 @@ steps:
   - task: UseDotNet@2
     inputs:
       packageType: 'sdk'
-      version: '8.0.x'
-      includePreviewVersions: true
+      version: '10.0.x'
 
   - task: DotNetCoreCLI@2
     displayName: 'Test'
     inputs:
       command: test
-      projects: tests/unit
+      projects: tests/FsYaml.Tests/FsYaml.Tests.fsproj
       arguments: '-c Release /p:AltCover=true /p:AltCoverCobertura=coverage.xml /p:AltCoverAssemblyFilter="(.*)(?<!Queil.FsYaml)$"'
 
-  - task: PublishCodeCoverageResults@1
+  - task: PublishCodeCoverageResults@2
     inputs:
-      summaryFileLocation: tests/unit/coverage.xml
-      codeCoverageTool: cobertura
+      summaryFileLocation: '**/coverage.xml'
 
   - task: DotNetCoreCLI@2
     displayName: 'Pack'
@@ -42,6 +40,6 @@ steps:
       verbosityPack: 'Normal'
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
 
-  - bash: dotnet nuget push -s  https://api.nuget.org/v3/index.json -k $(nuget-api-key) $(Build.ArtifactStagingDirectory)/*.nupkg
+  - bash: dotnet nuget push -s https://api.nuget.org/v3/index.json -k $(nuget-api-key) $(Build.ArtifactStagingDirectory)/*.nupkg
     displayName: 'Push'
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
