@@ -48,7 +48,7 @@ let tryLoad<'a> yamlStr =
   try
     Some (load<'a> yamlStr)
   with
-    _ -> None
+    :? FsYamlException -> None
 
 /// <summary>
 /// Loads a Yaml string as an <c>&#39;a</ c> object based on the specified type information and the default type information. Returns None if loading fails.
@@ -60,7 +60,7 @@ let tryLoadWith<'a> customDefinitions yamlStr =
   try
     Some (loadWith<'a> customDefinitions yamlStr)
   with
-    _ -> None
+    :? FsYamlException -> None
 
 /// <summary>
 /// Load the Yaml string as an object of <c>typ</ c>.
@@ -88,7 +88,7 @@ let tryLoadUntyped typ yamlStr =
   try
     Some (loadUntyped typ yamlStr)
   with
-    _ -> None
+    :? FsYamlException -> None
 
 /// <summary>
 /// Loads a Yaml string as an <c>typ</c> object based on the specified type information and the default type information. Returns None if loading fails.
@@ -101,7 +101,7 @@ let tryLoadWithUntyped typ customDefinitions yamlStr =
   try
     Some (loadWithUntyped typ customDefinitions yamlStr)
   with
-    _ -> None
+    :? FsYamlException -> None
 
 /// <summary>
 /// Dump the object to a Yaml string.

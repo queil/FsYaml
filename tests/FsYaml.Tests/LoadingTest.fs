@@ -11,7 +11,7 @@ let rec clearPosition = function
   | Scalar (v, _) -> Scalar (v, None)
   | Sequence (v, _) -> Sequence (List.map clearPosition v, None)
   | Mapping (v, _) ->
-    let mapping = v |> Seq.map (fun (KeyValue(k, v)) -> clearPosition k, clearPosition v) |> Map.ofSeq
+    let mapping = v |> List.map (fun (k, v) -> clearPosition k, clearPosition v)
     Mapping (mapping, None)
   | Null _ -> Null None
 
@@ -81,15 +81,15 @@ let representationTests =
     ]
     testList "can parse Mapping" [
       let expected =
-        Mapping (Map.ofList [ Scalar (Plain "abc", None), Scalar (Plain "def", None)
-                               ; Scalar (Plain "ghi", None), Sequence ([ Scalar (Plain "jkf", None) ], None) ], None)
+        Mapping ([ Scalar (Plain "abc", None), Scalar (Plain "def", None)
+                   Scalar (Plain "ghi", None), Sequence ([ Scalar (Plain "jkf", None) ], None) ], None)
       yield testCase "flow style" <| fun () ->
         Expect.equal (parse "{ abc: def, ghi: [ jkf ] }") expected ""
       yield testCase "block style" <| fun () ->
         Expect.equal (parse "abc: def\nghi:\n     - jkf") expected ""
     ]
     testList "can parse Null" [
-      let expected = Mapping (Map.ofList [ Scalar (Plain "abc", None), Null None ], None)
+      let expected = Mapping ([ Scalar (Plain "abc", None), Null None ], None)
       for input in [ "abc: "; "abc: null"; "abc: ~" ] do
         yield testCase input <| fun () ->
           Expect.equal (parse input) expected ""

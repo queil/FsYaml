@@ -28,8 +28,8 @@ module RepresentationTypes =
     | Scalar of Scalar * Position option
     /// Sequence node
     | Sequence of YamlObject list * Position option
-    /// Mapping node
-    | Mapping of Map<YamlObject, YamlObject> * Position option
+    /// Mapping node (key-value pairs in document order)
+    | Mapping of (YamlObject * YamlObject) list * Position option
     /// Null value that specializes in Scalar
     | Null of Position option
 
@@ -51,17 +51,20 @@ module RepresentationTypes =
   /// It is a module that operates Mapping.
   [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
   module Mapping =
-    let private pickF name = (fun k v ->
-      match k with
-      | Scalar (k, _) -> if Scalar.value k = name then Some v else None
-      | _ -> None)
     /// Search for elements in Mapping. Returns None if the element does not exist.
-    let tryFind key (mapping: Map<YamlObject, YamlObject>) = Map.tryPick (pickF key) mapping
+    let tryFind key (mapping: (YamlObject * YamlObject) list) =
+      mapping |> List.tryPick (fun (k, v) ->
+        match k with
+        | Scalar (s, _) when Scalar.value s = key -> Some v
+        | _ -> None)
     /// <summary>
     /// Search for elements in Mapping.
     /// </summary>
     /// <exception cref="System.Collections.Generic.KeyNotFoundException">If the key does not exist</exception>
-    let find key (mapping: Map<YamlObject, YamlObject>) = Map.pick (pickF key) mapping
+    let find key mapping =
+      match tryFind key mapping with
+      | Some v -> v
+      | None -> raise (System.Collections.Generic.KeyNotFoundException($"The key '{key}' was not found."))
 
 /// Provides a type of Native layer for Yaml.
 module NativeTypes =
