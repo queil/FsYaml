@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="IssuesTest.fs" />
     <Compile Include="UtilityTest.fs" />
     <Compile Include="TypesTest.fs" />
     <Compile Include="LoadingTest.fs" />

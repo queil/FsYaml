@@ -110,11 +110,11 @@ module Union =
   let printCase (x: UnionCaseInfo) = $"%s{Type.print x.DeclaringType}.%s{x.Name}"
 
 module Seq =
-  let tryZip xs ys =
-    if Seq.length xs <> Seq.length ys then
-      None
-    else
-      Some (Seq.zip xs ys)
+  let tryZip (xs: 'a seq) (ys: 'b seq) =
+    let xs = Seq.toArray xs
+    let ys = Seq.toArray ys
+    if xs.Length <> ys.Length then None
+    else Some (Seq.zip xs ys)
 
 module Option =
   let filter f = Option.bind (fun x -> if f x then Some x else None)

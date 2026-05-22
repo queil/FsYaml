@@ -40,14 +40,14 @@ module internal Detail =
   let decimalDef = { Accept = (=)typeof<decimal>; Construct = constructFromScalar decimal; Represent = representAsPlain string }
   let datetimeDef = {
     Accept = (=)typeof<DateTime>
-    Construct = constructFromScalar (fun x -> DateTime.Parse(x))
+    Construct = constructFromScalar (fun x -> DateTime.Parse(x, System.Globalization.CultureInfo.InvariantCulture))
     Represent = representAsNonPlain (fun x ->
       let d = unbox<DateTime> x
       d.ToString("yyyy-MM-dd HH:mm:ss.fff"))
   }
   let timespanDef = {
     Accept = (=)typeof<TimeSpan>
-    Construct = constructFromScalar (fun x -> TimeSpan.Parse(x))
+    Construct = constructFromScalar (fun x -> TimeSpan.Parse(x, System.Globalization.CultureInfo.InvariantCulture))
     Represent = representAsNonPlain (fun x ->
       let t = unbox<TimeSpan> x
       t.ToString(@"hh\:mm\:ss\.fff")
@@ -119,7 +119,7 @@ module internal Detail =
           then None  // Omit if it's the default value of the field
           else Some (name, value)
         )
-        |> Map.ofSeq
+        |> Seq.toList
       Mapping (values, None)
 
   let recordDef = {
@@ -180,7 +180,7 @@ module internal Detail =
         let keyType, valueType = let ts = t.GetGenericArguments() in (ts.[0], ts.[1])
         let values =
           mapping
-          |> Seq.map (fun (KeyValue(keyYaml, valueYaml)) ->
+          |> Seq.map (fun (keyYaml, valueYaml) ->
             let key = construct' keyType keyYaml
             let value = construct' valueType valueYaml
             (key, value)
@@ -199,7 +199,7 @@ module internal Detail =
           let value = represent valueType value
           (key, value)
         )
-        |> Map.ofSeq
+        |> Seq.toList
       Mapping (values, None)
   }
 
@@ -240,7 +240,7 @@ module internal Detail =
           None
       | _ -> None
 
-    let tryNamedFieldCase construct' (union: UnionCaseInfo) (mapping: Map<YamlObject, YamlObject>) =
+    let tryNamedFieldCase construct' (union: UnionCaseInfo) (mapping: (YamlObject * YamlObject) list) =
       let fields = union.GetFields()
       let yamls = fields |> Array.choose (fun field -> Mapping.tryFind field.Name mapping)
         
@@ -299,7 +299,7 @@ module internal Detail =
       let fields = union.GetFields()
       let valueType = fields.[0].PropertyType
       let value = represent valueType value
-      Mapping (Map.ofList [caseName union, value ], None)
+      Mapping ([ caseName union, value ], None)
 
     let manyFields represent (union: UnionCaseInfo) (values: obj[]) =
       let fields = union.GetFields()
@@ -309,7 +309,7 @@ module internal Detail =
           |> Seq.map (fun (field, value) -> represent field.PropertyType value)
           |> Seq.toList
         Sequence (xs, None)
-      Mapping (Map.ofList [ caseName union, fieldValues ], None)
+      Mapping ([ caseName union, fieldValues ], None)
 
     let isNamedFieldCase (union: UnionCaseInfo) =
       let fields = union.GetFields()
@@ -327,10 +327,10 @@ module internal Detail =
           let value = represent field.PropertyType value
           (name, value)
         )
-        |> Map.ofSeq
+        |> Seq.toList
       let name = caseName union
       let fieldMapping = Mapping (values, None)
-      Mapping (Map.ofList [ name, fieldMapping ], None)
+      Mapping ([ name, fieldMapping ], None)
 
     let represent (represent: RecursiveRepresenter) (t: Type) (obj: obj) =
       let union, values = FSharpValue.GetUnionFields(obj, t)
@@ -355,14 +355,16 @@ module internal Detail =
     Accept = fun t -> FSharpType.IsUnion(t) && isGenericTypeDef typedefof<Option<_>> t
     Construct = fun construct' t yaml ->
       let noneCase, someCase = let xs = FSharpType.GetUnionCases(t) in (xs.[0], xs.[1])
+      let parameterType = t.GetGenericArguments().[0]
       match yaml with
-      | Null _ -> (UnionConstructor.makeUnion noneCase [])
+      | Null _ -> UnionConstructor.makeUnion noneCase []
+      | Scalar (s, _) when Scalar.value s = noneCase.Name ->
+        UnionConstructor.makeUnion noneCase []
+      | Mapping (mapping, _) when Mapping.tryFind someCase.Name mapping |> Option.isSome ->
+        unionDef.Construct construct' t yaml
       | _ ->
-        try
-          let parameterType = t.GetGenericArguments().[0]
-          let value = construct' parameterType yaml
-          UnionConstructor.makeUnion someCase [ value ]
-        with _ ->  unionDef.Construct construct' t yaml
+        let value = construct' parameterType yaml
+        UnionConstructor.makeUnion someCase [ value ]
     Represent = fun represent t obj ->
       match obj with
       | null -> Null None

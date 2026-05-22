@@ -16,7 +16,7 @@ module Helper =
   let plain x = scalar (Plain x)
   let nonPlain x = scalar (NonPlain x)
   let sequence x = Sequence (x, None)
-  let mapping x = Mapping (Map.ofSeq x, None)
+  let mapping x = Mapping (Seq.toList x, None)
   let null' = Null None
 
 open Types

@@ -8,6 +8,6 @@ open FsYaml.RepresentationTypes
 let tests =
   testList "Types" [
     testCase "Mapping.find throws KeyNotFoundException when key not found" <| fun () ->
-      let m = Map.ofList [ Scalar (Plain "1", None), Scalar (Plain "2", None) ]
+      let m = [ Scalar (Plain "1", None), Scalar (Plain "2", None) ]
       Expect.throwsT<KeyNotFoundException> (fun () -> Mapping.find "3" m |> ignore) ""
   ]
